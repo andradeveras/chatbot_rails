@@ -1,5 +1,6 @@
 # app/controllers/messages_controller.rb
 class MessagesController < ApplicationController
+  require 'net/http'
   skip_before_action :verify_authenticity_token # se for API sem autenticação CSRF
 
   def create
@@ -24,5 +25,9 @@ class MessagesController < ApplicationController
     render json: message, status: :created
   rescue => e
     render json: { error: e.message }, status: 422
+  end
+
+  def chat
+    @messages = Message.where(user_id: params[:user_id]).order(created_at: :asc)
   end
 end

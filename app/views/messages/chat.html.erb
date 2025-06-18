@@ -1,0 +1,65 @@
+<h1>Chat com o Bot</h1>
+
+<div id="chat-box" style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll;">
+  <!-- Aqui vão aparecer as mensagens -->
+</div>
+
+<div style="margin-top: 10px;">
+  <input type="text" id="user-input" placeholder="Digite sua mensagem..." style="width: 80%;" autofocus autocomplete="off" />
+  <button id="send-btn">Enviar</button>
+</div>
+
+<script>
+  const chatBox = document.getElementById("chat-box");
+  const input = document.getElementById("user-input");
+  const sendBtn = document.getElementById("send-btn");
+
+  // Função para adicionar mensagens no chat
+  function addMessage(who, text) {
+    const p = document.createElement("p");
+    p.innerHTML = `<strong>${who}:</strong> ${text}`;
+    chatBox.appendChild(p);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Enviar mensagem para o backend Rails
+  async function sendMessage(message) {
+    try {
+      const response = await fetch("/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+        },
+        body: JSON.stringify({
+          content: message,
+          user_id: 1  // aqui você coloca o user_id correto ou deixa fixo pra teste
+        })
+      });
+
+      if (!response.ok) throw new Error("Erro na requisição");
+
+      const data = await response.json();
+
+      addMessage("Bot", data.reply);
+    } catch (error) {
+      addMessage("Erro", error.message);
+    }
+  }
+
+  sendBtn.addEventListener("click", () => {
+    const message = input.value.trim();
+    if (message === "") return;
+
+    addMessage("Você", message);
+    input.value = "";
+    sendMessage(message);
+  });
+
+  // Enviar mensagem ao apertar Enter
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      sendBtn.click();
+    }
+  });
+</script>
