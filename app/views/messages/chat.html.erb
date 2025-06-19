@@ -1,12 +1,115 @@
-<h1>Chat com o Bot</h1>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #fafafa;
+  }
 
-<div id="chat-box" style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll;">
-  <!-- Aqui vão aparecer as mensagens -->
-</div>
+  .post-container {
+    max-width: 500px;
+    margin: 40px auto;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    background-color: white;
+  }
 
-<div style="margin-top: 10px;">
-  <input type="text" id="user-input" placeholder="Digite sua mensagem..." style="width: 80%;" autofocus autocomplete="off" />
-  <button id="send-btn">Enviar</button>
+  .post-header {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .post-header img {
+    border-radius: 50%;
+    height: 40px;
+    margin-right: 10px;
+  }
+
+  .post-username {
+    font-weight: bold;
+  }
+
+  .post-image img {
+    width: 100%;
+    display: block;
+  }
+
+  .post-caption {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  #chat-box {
+    border-top: 1px solid #eee;
+    padding: 10px;
+    height: 200px;
+    overflow-y: scroll;
+    font-size: 14px;
+  }
+
+  .comment {
+    margin-bottom: 8px;
+  }
+
+  .comment .username {
+    font-weight: bold;
+    margin-right: 5px;
+  }
+
+  .comment.bot {
+    color: #666;
+    font-style: italic;
+  }
+
+  .post-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+  }
+
+  .post-input input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .post-input button {
+    margin-left: 10px;
+    padding: 8px 16px;
+    background-color: #3897f0;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .post-input button:hover {
+    background-color: #3181d0;
+  }
+</style>
+
+<div class="post-container">
+  <div class="post-header">
+    <img src="https://upload.wikimedia.org/wikipedia/pt/2/2e/Logotipo_do_Beach_Park.png" alt="perfil">
+    <div class="post-username">Beach Park </div>
+  </div>
+
+  <div class="post-image">
+    <img src="https://planetaturviagens.com.br/loja/wp-content/uploads/2021/03/c93f7d8d-3e6f-4e43-a51c-6e9b948b29e0-1024x766-1.jpg" alt="Parque Aventura">
+  </div>
+
+  <div class="post-caption">
+    Curtindo a adrenalina? Comenta aqui o que achou da experiência! 🎢🔥
+  </div>
+
+  <div id="chat-box">
+    <!-- Comentários aparecerão aqui -->
+  </div>
+
+  <div class="post-input">
+    <input type="text" id="user-input" placeholder="Adicione um comentário..." autocomplete="off" />
+    <button id="send-btn">Publicar</button>
+  </div>
 </div>
 
 <script>
@@ -14,15 +117,24 @@
   const input = document.getElementById("user-input");
   const sendBtn = document.getElementById("send-btn");
 
-  // Função para adicionar mensagens no chat
+  // Adiciona comentário ao chat box
   function addMessage(who, text) {
     const p = document.createElement("p");
-    p.innerHTML = `<strong>${who}:</strong> ${text}`;
+    p.classList.add("comment");
+    if (who === "Bot") {
+      p.classList.add("bot");
+    }
+
+    p.innerHTML = who === "Bot"
+        ? `<span class="username">🤖</span> ${text}`
+        : `<span class="username">${who}</span> ${text}`;
+
     chatBox.appendChild(p);
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // Enviar mensagem para o backend Rails
+  // Envia a mensagem para o Rails
+    // Enviar mensagem para o backend Rails
   async function sendMessage(message) {
     try {
       const response = await fetch("/messages", {
@@ -32,8 +144,7 @@
           "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
         },
         body: JSON.stringify({
-          content: message,
-          user_id: 1  // aqui você coloca o user_id correto ou deixa fixo pra teste
+          content: message
         })
       });
 
@@ -41,6 +152,7 @@
 
       const data = await response.json();
 
+      addMessage(data.username, data.user_message);
       addMessage("Bot", data.reply);
     } catch (error) {
       addMessage("Erro", error.message);
@@ -51,7 +163,6 @@
     const message = input.value.trim();
     if (message === "") return;
 
-    addMessage("Você", message);
     input.value = "";
     sendMessage(message);
   });

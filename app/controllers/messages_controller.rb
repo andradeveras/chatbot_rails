@@ -1,11 +1,12 @@
 # app/controllers/messages_controller.rb
 class MessagesController < ApplicationController
   require 'net/http'
-  skip_before_action :verify_authenticity_token # se for API sem autenticação CSRF
+  skip_before_action :verify_authenticity_token
 
   def create
     user_message = params[:content]
-    user = User.find(params[:user_id])
+    user = InstagramUser.order("RANDOM()").first
+    raise "Nenhum InstagramUser encontrado!" unless user
 
     uri = URI('http://localhost:3001/process-message')
     response = Net::HTTP.post(
@@ -16,14 +17,20 @@ class MessagesController < ApplicationController
 
     bot_reply = JSON.parse(response.body)["reply"]
 
-    message = Message.create!(
-      user: user,
+    Message.create!(
+      instagram_user: user,
       content: user_message,
       reply: bot_reply
     )
 
-    render json: message, status: :created
+    render json: {
+    reply: "@#{user.username} #{bot_reply}",
+    username: user.username,
+    user_message: user_message
+
+  }, status: :created
   rescue => e
+    puts "❌ Erro no create: #{e.message}"
     render json: { error: e.message }, status: 422
   end
 
